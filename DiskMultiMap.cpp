@@ -220,6 +220,30 @@ int DiskMultiMap::erase(const std::string &key, const std::string &value, const 
 // ---------------------------------------------------------------------------------------------------------------------------
 
 DiskMultiMap::Iterator::Iterator() {
+    m_isValid = 0;
+}
+
+// ------------------------------------ PERSONAL CONSTRUCTOR --------------------------------------------------------
+
+DiskMultiMap::Iterator::Iterator(BinaryFile::Offset curr, BinaryFile::Offset next, BinaryFile* bf, char key[121]) : m_curr(curr), m_next(next), m_iter_bf(bf) {
+    strcpy(m_iter_key, key);
+}
+
+// ------------------------------------ ITERATOR IS VALID -----------------------------------------------------------
+
+bool DiskMultiMap::Iterator::isValid() const {
+    return m_isValid;
+}
+
+// --------------------------------------- ITERATOR OPERATOR ++ ------------------------------------------------------
+
+DiskMultiMap::Iterator& DiskMultiMap::Iterator::operator++() {
+    
+}
+
+// ---------------------------------------- ITERATOR OPERATOR * ------------------------------------------------------
+
+MultiMapTuple DiskMultiMap::Iterator::operator*() {
     
 }
 
