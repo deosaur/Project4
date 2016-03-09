@@ -14,13 +14,17 @@ public:
     public:
         Iterator();
         // You may add additional constructors
-        // Iterator( any parameters here I like );
+        Iterator(BinaryFile::Offset curr, BinaryFile::Offset next, BinaryFile* bf, char key[121]);
         bool isValid() const;
         Iterator& operator++();
         MultiMapTuple operator*();
         
     private:
         // Your private member declarations will go here
+        bool m_isValid;
+        BinaryFile::Offset m_curr, m_next;
+        BinaryFile* m_iter_bf;
+        char m_iter_key[121]; // the key you are searching for 
     };
     
     DiskMultiMap();
