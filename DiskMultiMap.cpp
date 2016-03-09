@@ -19,17 +19,18 @@ DiskMultiMap::~DiskMultiMap() {
 // -------------------------------------------------- CREATE NEW ---------------------------------------------------------
 
 bool DiskMultiMap::createNew(const std::string& filename, unsigned int numBuckets) {
-    m_numBuckets = numBuckets;
-    bf.write(m_numBuckets, 0);
+    if(bf.isOpen())
+        bf.close();
     
-    bool create = 1;
-    if(!openExisting(filename)) {       // BE WEARY OF THIS CODE!!!
-        create = bf.createNew(filename);
-    }
+    bool create = bf.createNew(filename);
+    
     if(!create) {
         cout << "Error Creating New Binary File!" << endl;
         return false;
     }
+    
+    m_numBuckets = numBuckets;
+    bf.write(m_numBuckets, 0);
     
     r_head = 0;
     bool reuse = bf.write(r_head, sizeof(m_numBuckets));
@@ -41,11 +42,7 @@ bool DiskMultiMap::createNew(const std::string& filename, unsigned int numBucket
     
     for(int i = 0; i < m_numBuckets; i++) {  // set all the num buckets
         Bucket new_buck(0);
-        bool check = bf.write(new_buck, sizeof(m_numBuckets) + m_sizeOffset + m_sizeBucket*i);
-        if(!check) {
-            cout << "Error writing a bucket!" << endl;
-            return false;
-        }
+        bf.write(new_buck, sizeof(m_numBuckets) + m_sizeOffset + m_sizeBucket*i);
     }
     
     m_sizeOfBuckArray = m_sizeBucket*m_numBuckets;
@@ -160,7 +157,7 @@ int DiskMultiMap::erase(const std::string &key, const std::string &value, const 
         HashNode temp(" ", " ", " ", 0);
         bf.read(temp, temp_bucketOff);
         
-        if(temp.m_key == key.c_str() && temp.m_value == value.c_str() && temp.m_context == context.c_str()) {
+        if(strcmp(temp.m_key, key.c_str()) == 0 && strcmp(temp.m_value, value.c_str()) == 0 && strcmp(temp.m_context, context.c_str()) == 0) {
             
             if(temp_bucketOff == buck.m_bucketOff) {  // we are removing the head node
             
@@ -183,16 +180,20 @@ int DiskMultiMap::erase(const std::string &key, const std::string &value, const 
                 continue;
             }
             
-            else {  // we are removing some middle or end node
+            else {  // we are removing some middle or end node  ERROR WITHIN THIS ELSE SOMEWHERE!!!
                 
                 HashNode prev(" ", " ", " ", 0);
                 bf.read(prev, prev_off);
                 BinaryFile::Offset holder = temp_bucketOff;
                 prev.m_next = temp.m_next;
+                temp.m_next = r_head;
+                bf.write(temp, temp_bucketOff);
                 bf.write(prev, prev_off);
                 
-                if(r_head == 0)
+                
+                if(r_head == 0) {
                     r_head = holder;
+                }
                 else {
                     BinaryFile::Offset point = r_head;
                     r_head = holder;
@@ -243,7 +244,7 @@ void DiskMultiMap::print()
         cout << "bucket's node address: " << b.m_bucketOff << endl;
     }
     cout << "-----------------" << endl;
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 10; i++)
     {
         HashNode n(" ", " ", " ", 0);
         bf.read(n, m_sizeOfHeader + m_sizeOfBuckArray + i*m_sizeNode);					// CHECK VALUE
