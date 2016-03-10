@@ -141,15 +141,19 @@ DiskMultiMap::Iterator DiskMultiMap::search(const std::string &key) {  // BE SUR
     Bucket b(0);
     bf.read(b, bucket_addr);
     
+    if(b.m_bucketOff == 0)
+        return DiskMultiMap::Iterator::Iterator();
+    
     BinaryFile::Offset temp = b.m_bucketOff;
- 
+    HashNode temp_hash(" ", " ", " ", 0);
+    bf.read(temp_hash, temp);
+   
     while(temp != 0) {
-        HashNode temp_hash(" ", " ", " ", 0);
-        bf.read(temp_hash, temp);
         if(strcmp(key.c_str(), temp_hash.m_key) == 0) {
-            return DiskMultiMap::Iterator::Iterator(b.m_bucketOff, temp_hash.m_next, &bf, key);
+            return DiskMultiMap::Iterator::Iterator(temp, temp_hash.m_next, &bf, key);
         }
         temp = temp_hash.m_next;
+        bf.read(temp_hash, temp);
     }
     
     // if I didn't find the key in my buckets, return the invalid iterator
@@ -187,7 +191,7 @@ int DiskMultiMap::erase(const std::string &key, const std::string &value, const 
                 buck.m_bucketOff = temp.m_next;
                 bf.write(buck, bucket_addr);
                 BinaryFile::Offset holder = temp_bucketOff;
-                temp.m_next = 0;
+                temp.m_next = r_head;
                 
                 if(r_head == 0)
                     r_head = holder;
