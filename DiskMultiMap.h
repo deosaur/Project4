@@ -14,7 +14,7 @@ public:
     public:
         Iterator();
         // You may add additional constructors
-        Iterator(BinaryFile::Offset curr, BinaryFile::Offset next, BinaryFile* bf, char key[121]);
+        Iterator(BinaryFile::Offset curr, BinaryFile::Offset next, BinaryFile* bf, const std::string &key);
         bool isValid() const;
         Iterator& operator++();
         MultiMapTuple operator*();
@@ -36,7 +36,7 @@ public:
     Iterator search(const std::string& key);
     int erase(const std::string& key, const std::string& value, const std::string& context);
     // REMOVE THIS SHIT BEFORE SUBMITTING:
-    void print();
+    //void print();
     // PLEASE REMOVE OR YOU GET A ZERO!!!!!!!!!!!!!!!!!!!!!!
     
 private:
