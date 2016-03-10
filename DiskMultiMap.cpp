@@ -3,6 +3,8 @@
 #include <string>
 #include <functional>
 #include "DiskMultiMap.h"
+#include "MultiMapTuple.h"
+#include "InteractionTuple.h"
 
 using namespace std;
 
@@ -128,11 +130,32 @@ bool DiskMultiMap::insert(const std::string &key, const std::string &value, cons
 }
 
 // ------------------------------------------------- ITERATOR SEARCH ----------------------------------------------------------
-/*
-DiskMultiMap::Iterator DiskMultiMap::search(const std::string &key) {
-     // PLACEHOLDER CODE
+
+DiskMultiMap::Iterator DiskMultiMap::search(const std::string &key) {  // BE SURE TO CHECK FOR COLLISIONS
+  
+    hash<string> str_hash;
+    unsigned long hashValue = str_hash(key);
+    unsigned int bucket = hashValue % m_numBuckets;
+    BinaryFile::Offset bucket_addr = m_sizeOfHeader + bucket*m_sizeBucket;
+
+    Bucket b(0);
+    bf.read(b, bucket_addr);
+    
+    BinaryFile::Offset temp = b.m_bucketOff;
+ 
+    while(temp != 0) {
+        HashNode temp_hash(" ", " ", " ", 0);
+        bf.read(temp_hash, temp);
+        if(strcmp(key.c_str(), temp_hash.m_key) == 0) {
+            return DiskMultiMap::Iterator::Iterator(b.m_bucketOff, temp_hash.m_next, &bf, key);
+        }
+        temp = temp_hash.m_next;
+    }
+    
+    // if I didn't find the key in my buckets, return the invalid iterator
+    return DiskMultiMap::Iterator::Iterator();
 }
-*/
+
 // ---------------------------------------------------- ERASE -------------------------------------------------------------
 
 int DiskMultiMap::erase(const std::string &key, const std::string &value, const std::string &context) {
@@ -225,8 +248,9 @@ DiskMultiMap::Iterator::Iterator() {
 
 // ------------------------------------ PERSONAL CONSTRUCTOR --------------------------------------------------------
 
-DiskMultiMap::Iterator::Iterator(BinaryFile::Offset curr, BinaryFile::Offset next, BinaryFile* bf, char key[121]) : m_curr(curr), m_next(next), m_iter_bf(bf) {
-    strcpy(m_iter_key, key);
+DiskMultiMap::Iterator::Iterator(BinaryFile::Offset curr, BinaryFile::Offset next, BinaryFile* bf, const std::string &key) : m_curr(curr), m_next(next), m_iter_bf(bf) {
+    strcpy(m_iter_key, key.c_str());
+    m_isValid = 1;
 }
 
 // ------------------------------------ ITERATOR IS VALID -----------------------------------------------------------
@@ -237,19 +261,59 @@ bool DiskMultiMap::Iterator::isValid() const {
 
 // --------------------------------------- ITERATOR OPERATOR ++ ------------------------------------------------------
 
-DiskMultiMap::Iterator& DiskMultiMap::Iterator::operator++() {
+DiskMultiMap::Iterator& DiskMultiMap::Iterator::operator++() {  //TEST THIS! CHECK THIS FOR COLLISIONS!
+    if(isValid()) {
+
+        m_curr = m_next;
+        
+        while(m_curr != 0) {
+            HashNode temp_node(" ", " ", " ", 0);
+            m_iter_bf->read(temp_node, m_curr);
+            
+            if(strcmp(temp_node.m_key, m_iter_key) == 0) { // found the association that maps to the correct key
+                m_next = temp_node.m_next;
+                return *this;  // get out because m_curr now holds the correct offset iterator should move to
+            }
+            
+            m_curr = temp_node.m_next;
+        } // end of while loop
+        
+        if(m_curr == 0) {
+            m_isValid = 0;
+        }
+    }
+    
+    return *this;
     
 }
+
 
 // ---------------------------------------- ITERATOR OPERATOR * ------------------------------------------------------
 
 MultiMapTuple DiskMultiMap::Iterator::operator*() {
     
+    MultiMapTuple m;
+    
+    if(!isValid()) {
+        m.key = "";
+        m.value = "";
+        m.context = "";
+        return m;
+    }
+    
+    HashNode new_hash(" ", " ", " ", 0);
+    m_iter_bf->read(new_hash, m_curr);
+    
+    m.key = new_hash.m_key;
+    m.value = new_hash.m_value;
+    m.context = new_hash.m_context;
+    return m;
+    
 }
 
 
 // ------------------------------------- DELETE THIS -------------------------------------------
-
+/*
 void DiskMultiMap::print()
 {
     cout << "------------------" << endl;
@@ -281,4 +345,5 @@ void DiskMultiMap::print()
     }
 
 }
+ */
 
