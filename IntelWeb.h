@@ -27,6 +27,46 @@ private:
     DiskMultiMap m_To;          // Multi Map to Map "To" Telemetry lines, Target to Initiatior 
     DiskMultiMap m_From;        // Multi Map to Map "From" Telemetry lines, Initiator To Target
     DiskMultiMap m_Prev;        // Multi Map to Map Prevalences Telemetry lines
+    
+    bool countPrev(const std::string& value, int prevThresh) { // false if bad (below threshold)
+        
+        int count = 0;
+        DiskMultiMap::Iterator iter = m_Prev.search(value);
+        while(iter.isValid()) {
+            count++;
+            if(count >= prevThresh)
+                return true;
+            ++iter;
+        }
+        return false;
+    }
+    
 };
+
+
+inline
+bool operator<(const InteractionTuple& lhs, const InteractionTuple& rhs) {
+    if(lhs.context < rhs.context)
+        return true;
+    if(lhs.context > rhs.context)
+        return false;
+    if(lhs.context == rhs.context) {
+        if(lhs.from < rhs.from)
+            return true;
+        if(lhs.from > rhs.from)
+            return false;
+        if(lhs.from == rhs.from) {
+            if(lhs.to < rhs.to)
+                return true;
+            if(lhs.to > rhs.to)
+                return false;
+            else
+                return false;
+        }
+    }
+    
+    return false;
+}
+
 
 #endif // INTELWEB_H_
